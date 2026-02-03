@@ -1,0 +1,21 @@
+# Build results
+bin/
+obj/
+
+# User-specific
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# VS local settings and caches
+.vs/
+TaskGX/.vs/
+
+# ASP.NET Core logs
+log/
+logs/
+
+# Other
+*.swp
+*.DS_Store
