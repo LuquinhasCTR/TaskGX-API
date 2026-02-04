@@ -1,4 +1,8 @@
+using Microsoft.EntityFrameworkCore;
+using TaskGX.API.Data;
+
 var builder = WebApplication.CreateBuilder(args);
+
 
 // Add services to the container.
 
@@ -13,6 +17,11 @@ if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 }
+
+
+builder.Services.AddDbContext<TaskGXContext>(options =>
+    options.UseMySql(builder.Configuration.GetConnectionString("DefaultConnection"),
+    new MySqlServerVersion(new Version(8, 0, 33))));
 
 app.UseHttpsRedirection();
 
