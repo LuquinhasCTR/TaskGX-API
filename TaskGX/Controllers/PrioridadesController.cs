@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using TaskGX.API.Data;
+using TaskGX.Data;
 using TaskGX.API.DTOs;
 
 namespace TaskGX.API.Controllers
