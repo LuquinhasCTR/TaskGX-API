@@ -19,3 +19,7 @@ logs/
 # Other
 *.swp
 *.DS_Store
+# =========================
+# EMAIL / API KEYS
+# =========================
+**/EmailSettings.cs
