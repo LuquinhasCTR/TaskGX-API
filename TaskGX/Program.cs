@@ -1,32 +1,44 @@
 using Microsoft.EntityFrameworkCore;
-using TaskGX.API.Data;
+using TaskGX.API.Repositories;
+using TaskGX.API.Services;
+using TaskGX.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
-// Add services to the container.
+builder.Services.AddDbContext<TaskGXContext>(options =>
+    options.UseMySQL(connectionString)
+);
+
+builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
+
+builder.Services.AddScoped<UsuarioRepository>();
+builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<RegistrationService>();
+builder.Services.AddScoped<VerificationService>();
+builder.Services.AddScoped<EmailSender>();
+
+builder.Services.AddCors(o =>
+{
+    o.AddPolicy("dev", p => p.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod());
+});
 
 builder.Services.AddControllers();
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+    app.UseSwagger();
+    app.UseSwaggerUI();
 }
 
-
-builder.Services.AddDbContext<TaskGXContext>(options =>
-    options.UseMySql(builder.Configuration.GetConnectionString("DefaultConnection"),
-    new MySqlServerVersion(new Version(8, 0, 33))));
-
 app.UseHttpsRedirection();
-
+app.UseCors("dev");
 app.UseAuthorization();
-
 app.MapControllers();
-
 app.Run();
