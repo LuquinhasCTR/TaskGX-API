@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using TaskGX.API.Models;
-using TaskGX.API.Data;  
+using TaskGX.Data;  
 using TaskGX.API.DTOs;
 using Microsoft.EntityFrameworkCore;
 
