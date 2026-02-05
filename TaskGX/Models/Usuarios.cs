@@ -1,35 +1,52 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace TaskGX.API.Models
 {
-    /// <summary>
-    /// Usuário do TaskGX
-    /// </summary>
+    [Table("Usuarios")]
     public class Usuarios
     {
         [Key]
+        [Column("ID")]
         public int ID { get; set; }
 
         [Required]
         [MaxLength(100)]
-        public string Nome { get; set; }
+        [Column("Nome")]
+        public string Nome { get; set; } = string.Empty;
 
         [Required]
         [MaxLength(150)]
-        public string Email { get; set; }
+        [Column("Email")]
+        public string Email { get; set; } = string.Empty;
 
+        // ✅ no banco é "Senha"
         [Required]
-        public string SenhaHash { get; set; }  // Nome alterado para deixar claro que é hash
+        [Column("Senha")]
+        public string SenhaHash { get; set; } = string.Empty;
 
-        public string Avatar { get; set; }
+        [Column("Avatar")]
+        public string? Avatar { get; set; }
+
+        [Column("Ativo")]
         public bool Ativo { get; set; } = true;
+
+        [Column("EmailVerificado")]
         public bool EmailVerificado { get; set; } = false;
-        public string CodigoVerificacao { get; set; }
-        public DateTime CriadoEm { get; set; } = DateTime.Now;
-        public DateTime? DataAtualizacao { get; set; }
+
+        [Column("CodigoVerificacao")]
+        public string? CodigoVerificacao { get; set; }
+
+        [Column("CodigoVerificacaoExpiracao")]
         public DateTime? CodigoVerificacaoExpiracao { get; set; }
 
-        public Usuarios() { }
+        // ✅ no banco é "Criado_em"
+        [Column("Criado_em")]
+        public DateTime CriadoEm { get; set; } = DateTime.UtcNow;
+
+        // ✅ no banco é "DataAtualizacao"
+        [Column("DataAtualizacao")]
+        public DateTime DataAtualizacao { get; set; } = DateTime.UtcNow;
     }
 }
