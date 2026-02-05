@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Collections;
-using TaskGX.API.Data;
+using TaskGX.Data;
 using TaskGX.API.DTOs;
 using TaskGX.API.Models;
 
@@ -23,7 +23,7 @@ namespace TaskGX.API.Controllers
         public async Task<ActionResult<IEnumerable<ListaDTO>>> GetListas(int usuarioId)
         {
             var listas = await _context.Listas
-                .Where(l => l.UsuarioId == usuarioId)
+                .Where(l => l.UsuarioID == usuarioId)
                 .Select(l => new ListaDTO
                 {
                     ID = l.ID,
@@ -44,7 +44,7 @@ namespace TaskGX.API.Controllers
             _context.Listas.Add(lista);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(GetListas), new { usuarioId = lista.UsuarioId }, new ListaDTO
+            return CreatedAtAction(nameof(GetListas), new { usuarioId = lista.UsuarioID }, new ListaDTO
             {
                 ID = lista.ID,
                 Nome = lista.Nome,
