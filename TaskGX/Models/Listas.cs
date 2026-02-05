@@ -4,27 +4,37 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace TaskGX.API.Models
 {
+    [Table("Listas")]
     public class Listas
     {
         [Key]
+        [Column("ID")]
         public int ID { get; set; }
 
+        // ✅ no banco é Usuario_id
         [Required]
-        [ForeignKey("Usuario")]
-        public int UsuarioId { get; set; }
+        [Column("Usuario_id")]
+        public int UsuarioID { get; set; }
+
+        // navigation
+        public Usuarios? Usuario { get; set; }
 
         [Required]
         [MaxLength(100)]
+        [Column("Nome")]
         public string Nome { get; set; } = string.Empty;
 
         [MaxLength(20)]
+        [Column("Cor")]
         public string? Cor { get; set; }
 
+        [Column("Favorita")]
         public bool Favorita { get; set; } = false;
 
-        public DateTime DataCriacao { get; set; } = DateTime.Now;
+        [Column("Ordem")]
+        public int Ordem { get; set; } = 0;
 
-        // Relação opcional com usuário (navigation property)
-        public Usuarios? Usuario { get; set; }
+        [Column("DataCriacao")]
+        public DateTime DataCriacao { get; set; } = DateTime.Now;
     }
 }
