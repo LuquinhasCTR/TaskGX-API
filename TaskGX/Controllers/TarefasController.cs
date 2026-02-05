@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using TaskGX.API.Data;
+using TaskGX.Data;
 using TaskGX.API.DTOs;
 using TaskGX.API.Models;
 
@@ -24,7 +24,7 @@ namespace TaskGX.API.Controllers
             var tarefas = await _context.Tarefas
                 .Include(t => t.Lista)
                 .Include(t => t.Prioridade)
-                .Where(t => t.ListaId == listaId)
+                .Where(t => t.ListaID == listaId)
                 .Select(t => new TarefaDTO
                 {
                     ID = t.ID,
@@ -35,9 +35,9 @@ namespace TaskGX.API.Controllers
                     Arquivada = t.Arquivada,
                     DataVencimento = t.DataVencimento,
                     DataCriacao = t.DataCriacao,
-                    ListaId = t.ListaId,
+                    ListaId = t.ListaID,
                     ListaNome = t.Lista != null ? t.Lista.Nome : null,
-                    PrioridadeId = t.PrioridadeId,
+                    PrioridadeId = t.PrioridadeID,
                     PrioridadeNome = t.Prioridade != null ? t.Prioridade.Nome : null
                 })
                 .ToListAsync();
@@ -53,7 +53,7 @@ namespace TaskGX.API.Controllers
             _context.Tarefas.Add(tarefa);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(GetTarefas), new { listaId = tarefa.ListaId }, new TarefaDTO
+            return CreatedAtAction(nameof(GetTarefas), new { listaId = tarefa.ListaID }, new TarefaDTO
             {
                 ID = tarefa.ID,
                 Titulo = tarefa.Titulo,
@@ -63,9 +63,9 @@ namespace TaskGX.API.Controllers
                 Arquivada = tarefa.Arquivada,
                 DataVencimento = tarefa.DataVencimento,
                 DataCriacao = tarefa.DataCriacao,
-                ListaId = tarefa.ListaId,
+                ListaId = tarefa.ListaID,
                 ListaNome = null,
-                PrioridadeId = tarefa.PrioridadeId,
+                PrioridadeId = tarefa.PrioridadeID,
                 PrioridadeNome = null
             });
         }
