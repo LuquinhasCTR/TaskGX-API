@@ -1,25 +1,56 @@
-# Build results
+####################################
+# BUILD / OUTPUT
+####################################
 bin/
 obj/
 
-# User-specific
+####################################
+# VISUAL STUDIO / VS CODE
+####################################
+.vs/
+.vscode/
 *.user
 *.suo
 *.userosscache
 *.sln.docstates
 
-# VS local settings and caches
-.vs/
-TaskGX/.vs/
-
-# ASP.NET Core logs
+####################################
+# LOGS
+####################################
 log/
 logs/
 
-# Other
-*.swp
-*.DS_Store
-# =========================
+####################################
+# ASP.NET CORE – CONFIGS (IGNORAR)
+####################################
+# Ignora appsettings por ambiente em QUALQUER pasta
+**/appsettings.Development.json
+**/appsettings.*
+
+####################################
+# USER SECRETS / ENV
+####################################
+secrets.json
+.env
+
+####################################
 # EMAIL / API KEYS
-# =========================
+####################################
 **/EmailSettings.cs
+
+####################################
+# OS FILES
+####################################
+*.DS_Store
+Thumbs.db
+*.swp
+
+####################################
+# NODE (se usar frontend)
+####################################
+node_modules/
+
+####################################
+# PUBLISH
+####################################
+publish/
