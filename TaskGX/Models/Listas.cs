@@ -11,12 +11,10 @@ namespace TaskGX.API.Models
         [Column("ID")]
         public int ID { get; set; }
 
-        // ✅ no banco é Usuario_id
         [Required]
         [Column("Usuario_id")]
-        public int UsuarioID { get; set; }
+        public int UsuarioID { get; set; }   
 
-        // navigation
         public Usuarios? Usuario { get; set; }
 
         [Required]
