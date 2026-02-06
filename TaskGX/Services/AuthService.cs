@@ -1,7 +1,5 @@
-﻿using System.Threading.Tasks;
-using TaskGX.API.Models;
+﻿using TaskGX.API.Models;
 using TaskGX.API.Repositories;
-using TaskGX.Repositories;
 
 namespace TaskGX.API.Services
 {
@@ -16,6 +14,8 @@ namespace TaskGX.API.Services
 
         public async Task<Usuarios?> LoginAsync(string email, string senhaDigitada)
         {
+            email = (email ?? "").Trim().ToLowerInvariant();
+
             var usuario = await _usuarioRepository.ObterPorEmailAsync(email);
             if (usuario == null) return null;
 

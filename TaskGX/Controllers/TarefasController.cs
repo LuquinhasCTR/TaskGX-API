@@ -1,13 +1,16 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using TaskGX.Data;
+using System.Security.Claims;
 using TaskGX.API.DTOs;
 using TaskGX.API.Models;
+using TaskGX.Data;
 
 namespace TaskGX.API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class TarefasController : ControllerBase
     {
         private readonly TaskGXContext _context;
@@ -17,10 +20,26 @@ namespace TaskGX.API.Controllers
             _context = context;
         }
 
+        private int GetUsuarioId()
+        {
+            var idStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrWhiteSpace(idStr) || !int.TryParse(idStr, out var id))
+                throw new UnauthorizedAccessException("Token inválido ou sem ID.");
+            return id;
+        }
+
         // GET: api/tarefas?listaId=1
         [HttpGet]
         public async Task<ActionResult<IEnumerable<TarefaDTO>>> GetTarefas(int listaId)
         {
+            var usuarioId = GetUsuarioId();
+
+            // ✅ garante que a lista pertence ao usuário
+            var listaDoUsuario = await _context.Listas
+                .AnyAsync(l => l.ID == listaId && l.UsuarioID == usuarioId);
+
+            if (!listaDoUsuario) return NotFound(); // não existe ou não é dele
+
             var tarefas = await _context.Tarefas
                 .Include(t => t.Lista)
                 .Include(t => t.Prioridade)
@@ -42,14 +61,23 @@ namespace TaskGX.API.Controllers
                 })
                 .ToListAsync();
 
-            return tarefas;
+            return Ok(tarefas);
         }
 
         // POST: api/tarefas
         [HttpPost]
         public async Task<ActionResult<TarefaDTO>> CriarTarefa(Tarefas tarefa)
         {
+            var usuarioId = GetUsuarioId();
+
+            // ✅ garante que a lista é do usuário antes de criar
+            var lista = await _context.Listas
+                .FirstOrDefaultAsync(l => l.ID == tarefa.ListaID && l.UsuarioID == usuarioId);
+
+            if (lista == null) return NotFound("Lista não encontrada.");
+
             tarefa.DataCriacao = DateTime.Now;
+
             _context.Tarefas.Add(tarefa);
             await _context.SaveChangesAsync();
 
@@ -64,7 +92,7 @@ namespace TaskGX.API.Controllers
                 DataVencimento = tarefa.DataVencimento,
                 DataCriacao = tarefa.DataCriacao,
                 ListaId = tarefa.ListaID,
-                ListaNome = null,
+                ListaNome = lista.Nome,
                 PrioridadeId = tarefa.PrioridadeID,
                 PrioridadeNome = null
             });
@@ -74,9 +102,36 @@ namespace TaskGX.API.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> AtualizarTarefa(int id, Tarefas tarefa)
         {
+            var usuarioId = GetUsuarioId();
             if (id != tarefa.ID) return BadRequest();
 
-            _context.Entry(tarefa).State = EntityState.Modified;
+            // ✅ pega a tarefa SOMENTE se ela estiver numa lista do usuário
+            var tarefaDb = await _context.Tarefas
+                .Include(t => t.Lista)
+                .FirstOrDefaultAsync(t => t.ID == id && t.Lista != null && t.Lista.UsuarioID == usuarioId);
+
+            if (tarefaDb == null) return NotFound();
+
+            // ✅ atualiza campos permitidos (evita overposting)
+            tarefaDb.Titulo = tarefa.Titulo;
+            tarefaDb.Descricao = tarefa.Descricao;
+            tarefaDb.Tags = tarefa.Tags;
+            tarefaDb.Concluida = tarefa.Concluida;
+            tarefaDb.Arquivada = tarefa.Arquivada;
+            tarefaDb.DataVencimento = tarefa.DataVencimento;
+            tarefaDb.PrioridadeID = tarefa.PrioridadeID;
+
+            // Se você permitir mover de lista, faça validação também:
+            if (tarefaDb.ListaID != tarefa.ListaID)
+            {
+                var novaLista = await _context.Listas
+                    .AnyAsync(l => l.ID == tarefa.ListaID && l.UsuarioID == usuarioId);
+
+                if (!novaLista) return BadRequest("Lista destino inválida.");
+
+                tarefaDb.ListaID = tarefa.ListaID;
+            }
+
             await _context.SaveChangesAsync();
             return NoContent();
         }
@@ -85,7 +140,12 @@ namespace TaskGX.API.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeletarTarefa(int id)
         {
-            var tarefa = await _context.Tarefas.FindAsync(id);
+            var usuarioId = GetUsuarioId();
+
+            var tarefa = await _context.Tarefas
+                .Include(t => t.Lista)
+                .FirstOrDefaultAsync(t => t.ID == id && t.Lista != null && t.Lista.UsuarioID == usuarioId);
+
             if (tarefa == null) return NotFound();
 
             _context.Tarefas.Remove(tarefa);
@@ -97,7 +157,12 @@ namespace TaskGX.API.Controllers
         [HttpPost("{id}/concluir")]
         public async Task<IActionResult> ConcluirTarefa(int id)
         {
-            var tarefa = await _context.Tarefas.FindAsync(id);
+            var usuarioId = GetUsuarioId();
+
+            var tarefa = await _context.Tarefas
+                .Include(t => t.Lista)
+                .FirstOrDefaultAsync(t => t.ID == id && t.Lista != null && t.Lista.UsuarioID == usuarioId);
+
             if (tarefa == null) return NotFound();
 
             tarefa.Concluida = true;
