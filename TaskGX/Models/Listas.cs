@@ -1,4 +1,3 @@
-﻿using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -13,7 +12,7 @@ namespace TaskGX.API.Models
 
         [Required]
         [Column("Usuario_id")]
-        public int UsuarioID { get; set; }   
+        public int UsuarioID { get; set; }
 
         public Usuarios? Usuario { get; set; }
 
@@ -27,12 +26,12 @@ namespace TaskGX.API.Models
         public string? Cor { get; set; }
 
         [Column("Favorita")]
-        public bool Favorita { get; set; } = false;
+        public bool Favorita { get; set; }
 
         [Column("Ordem")]
-        public int Ordem { get; set; } = 0;
+        public int Ordem { get; set; }
 
         [Column("DataCriacao")]
-        public DateTime DataCriacao { get; set; } = DateTime.Now;
+        public DateTime DataCriacao { get; set; } = DateTime.UtcNow;
     }
 }

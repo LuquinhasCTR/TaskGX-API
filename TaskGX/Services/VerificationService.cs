@@ -1,5 +1,3 @@
-﻿using System;
-using System.Threading.Tasks;
 using TaskGX.API.Repositories;
 using TaskGX.Repositories;
 
@@ -18,6 +16,9 @@ namespace TaskGX.API.Services
 
         public async Task<(bool Sucesso, string Mensagem)> VerificarEmailAsync(string email, string codigo)
         {
+            email = (email ?? string.Empty).Trim().ToLowerInvariant();
+            codigo = (codigo ?? string.Empty).Trim();
+
             var usuario = await _usuarioRepository.ObterPorEmailAsync(email);
             if (usuario == null) return (false, "Email não encontrado.");
 
@@ -31,15 +32,19 @@ namespace TaskGX.API.Services
 
         public async Task<(bool Sucesso, string Mensagem)> ReenviarCodigoAsync(string email)
         {
+            email = (email ?? string.Empty).Trim().ToLowerInvariant();
+
             var usuario = await _usuarioRepository.ObterPorEmailAsync(email);
             if (usuario == null) return (false, "Email não encontrado.");
 
             var codigo = RegistrationService.GerarCodigoVerificacao();
-            await _usuarioRepository.AtualizarVerificacaoEmailAsync(usuario.ID, false, false, codigo, DateTime.UtcNow.AddHours(24));
+            var expiracao = DateTime.UtcNow.AddHours(24);
+
+            await _usuarioRepository.AtualizarVerificacaoEmailAsync(usuario.ID, false, false, codigo, expiracao);
 
             try
             {
-                await _emailSender.SendVerificationCodeAsync(email, codigo, expiresAt: usuario.CodigoVerificacaoExpiracao);
+                await _emailSender.SendVerificationCodeAsync(email, codigo, expiresAt: expiracao);
             }
             catch
             {

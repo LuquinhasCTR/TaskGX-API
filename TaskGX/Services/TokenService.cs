@@ -1,6 +1,7 @@
-﻿using System.IdentityModel.Tokens.Jwt;
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using TaskGX.API.Models;
 
@@ -8,63 +9,45 @@ namespace TaskGX.API.Services
 {
     public class TokenService
     {
-        private readonly IConfiguration _config;
+        private readonly JwtSettings _settings;
 
-        public TokenService(IConfiguration config)
+        public TokenService(IOptions<JwtSettings> settings)
         {
-            _config = config;
+            _settings = settings.Value;
         }
 
         public string CreateToken(Usuarios usuario)
         {
-            if (usuario == null) throw new ArgumentNullException(nameof(usuario));
-
-            var key = _config["Jwt:Key"] ?? throw new InvalidOperationException("Jwt:Key não configurado.");
-            var issuer = _config["Jwt:Issuer"] ?? "TaskGX";
-            var audience = _config["Jwt:Audience"] ?? "TaskGX";
-
-            // Padronize com o mesmo nome que você usar no appsettings.json
-            // Recomendado: "ExpireMinutes"
-            var expiresMinutesStr = _config["Jwt:ExpireMinutes"];
-            var expiresMinutes = int.TryParse(expiresMinutesStr, out var m) ? m : 480;
+            ArgumentNullException.ThrowIfNull(usuario);
 
             var claims = new List<Claim>
             {
-                // ID do usuário (compatível com o ecossistema ASP.NET)
                 new(JwtRegisteredClaimNames.Sub, usuario.ID.ToString()),
                 new(ClaimTypes.NameIdentifier, usuario.ID.ToString()),
-
-                // Email
                 new(JwtRegisteredClaimNames.Email, usuario.Email),
                 new(ClaimTypes.Email, usuario.Email),
-
-                // Nome (opcional)
                 new("name", usuario.Nome),
                 new(ClaimTypes.Name, usuario.Nome),
             };
 
-            var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key));
-            var creds = new SigningCredentials(signingKey, SecurityAlgorithms.HmacSha256);
+            var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_settings.Key));
+            var credentials = new SigningCredentials(signingKey, SecurityAlgorithms.HmacSha256);
 
             var token = new JwtSecurityToken(
-                issuer: issuer,
-                audience: audience,
+                issuer: _settings.Issuer,
+                audience: _settings.Audience,
                 claims: claims,
                 notBefore: DateTime.UtcNow,
-                expires: DateTime.UtcNow.AddMinutes(expiresMinutes),
-                signingCredentials: creds
+                expires: DateTime.UtcNow.AddMinutes(_settings.ExpireMinutes),
+                signingCredentials: credentials
             );
 
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
-        /// <summary>
-        /// Pega o ID do usuário do ClaimsPrincipal.
-        /// Prioriza ClaimTypes.NameIdentifier, e cai no "sub" como fallback.
-        /// </summary>
         public static int GetUserId(ClaimsPrincipal user)
         {
-            if (user == null) throw new ArgumentNullException(nameof(user));
+            ArgumentNullException.ThrowIfNull(user);
 
             var idStr =
                 user.FindFirstValue(ClaimTypes.NameIdentifier) ??

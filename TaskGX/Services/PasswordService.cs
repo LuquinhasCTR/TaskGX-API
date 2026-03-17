@@ -1,9 +1,8 @@
-﻿using System;
-using BCrypt.Net;
+using System.Text.RegularExpressions;
 
 namespace TaskGX.API.Services
 {
-    public static class PasswordService
+    public static partial class PasswordService
     {
         public static string Hash(string senha)
         {
@@ -20,12 +19,24 @@ namespace TaskGX.API.Services
 
         public static bool IsValid(string senha)
         {
-            if (senha.Length < 8) return false;
-            if (!System.Text.RegularExpressions.Regex.IsMatch(senha, "[A-Z]")) return false;
-            if (!System.Text.RegularExpressions.Regex.IsMatch(senha, "[a-z]")) return false;
-            if (!System.Text.RegularExpressions.Regex.IsMatch(senha, "[0-9]")) return false;
-            if (!System.Text.RegularExpressions.Regex.IsMatch(senha, @"[!@#$%^&*(),.?""':{}|<>_]")) return false;
+            if (string.IsNullOrWhiteSpace(senha) || senha.Length < 8) return false;
+            if (!UppercaseRegex().IsMatch(senha)) return false;
+            if (!LowercaseRegex().IsMatch(senha)) return false;
+            if (!DigitRegex().IsMatch(senha)) return false;
+            if (!SpecialCharacterRegex().IsMatch(senha)) return false;
             return true;
         }
+
+        [GeneratedRegex("[A-Z]")]
+        private static partial Regex UppercaseRegex();
+
+        [GeneratedRegex("[a-z]")]
+        private static partial Regex LowercaseRegex();
+
+        [GeneratedRegex("[0-9]")]
+        private static partial Regex DigitRegex();
+
+        [GeneratedRegex("[!@#$%^&*(),.?\\\":{}|<>_]")]
+        private static partial Regex SpecialCharacterRegex();
     }
 }

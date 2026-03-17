@@ -1,9 +1,9 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.Security.Claims;
 using TaskGX.API.DTOs;
 using TaskGX.API.Models;
+using TaskGX.API.Services;
 using TaskGX.Data;
 
 namespace TaskGX.API.Controllers
@@ -20,30 +20,22 @@ namespace TaskGX.API.Controllers
             _context = context;
         }
 
-        private int GetUsuarioId()
-        {
-            var idStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrWhiteSpace(idStr) || !int.TryParse(idStr, out var id))
-                throw new UnauthorizedAccessException("Token inválido ou sem ID.");
-            return id;
-        }
-
         // GET: api/tarefas?listaId=1
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<TarefaDTO>>> GetTarefas(int listaId)
+        public async Task<ActionResult<IEnumerable<TarefaDTO>>> GetTarefas([FromQuery] int listaId)
         {
-            var usuarioId = GetUsuarioId();
+            var usuarioId = TokenService.GetUserId(User);
 
-            // ✅ garante que a lista pertence ao usuário
-            var listaDoUsuario = await _context.Listas
-                .AnyAsync(l => l.ID == listaId && l.UsuarioID == usuarioId);
-
-            if (!listaDoUsuario) return NotFound(); // não existe ou não é dele
+            var listaDoUsuario = await _context.Listas.AnyAsync(l => l.ID == listaId && l.UsuarioID == usuarioId);
+            if (!listaDoUsuario) return NotFound();
 
             var tarefas = await _context.Tarefas
                 .Include(t => t.Lista)
                 .Include(t => t.Prioridade)
                 .Where(t => t.ListaID == listaId)
+                .OrderBy(t => t.Concluida)
+                .ThenBy(t => t.Ordem)
+                .ThenBy(t => t.DataCriacao)
                 .Select(t => new TarefaDTO
                 {
                     ID = t.ID,
@@ -66,20 +58,41 @@ namespace TaskGX.API.Controllers
 
         // POST: api/tarefas
         [HttpPost]
-        public async Task<ActionResult<TarefaDTO>> CriarTarefa(Tarefas tarefa)
+        public async Task<ActionResult<TarefaDTO>> CriarTarefa([FromBody] CriarTarefaRequest request)
         {
-            var usuarioId = GetUsuarioId();
+            var usuarioId = TokenService.GetUserId(User);
 
-            // ✅ garante que a lista é do usuário antes de criar
             var lista = await _context.Listas
-                .FirstOrDefaultAsync(l => l.ID == tarefa.ListaID && l.UsuarioID == usuarioId);
+                .FirstOrDefaultAsync(l => l.ID == request.ListaID && l.UsuarioID == usuarioId);
 
             if (lista == null) return NotFound("Lista não encontrada.");
 
-            tarefa.DataCriacao = DateTime.Now;
+            var tarefa = new Tarefas
+            {
+                ListaID = request.ListaID,
+                Titulo = request.Titulo.Trim(),
+                Descricao = string.IsNullOrWhiteSpace(request.Descricao) ? null : request.Descricao.Trim(),
+                Tags = string.IsNullOrWhiteSpace(request.Tags) ? null : request.Tags.Trim(),
+                PrioridadeID = request.PrioridadeID,
+                Concluida = request.Concluida,
+                Arquivada = request.Arquivada,
+                DataVencimento = request.DataVencimento,
+                Ordem = request.Ordem,
+                DataCriacao = DateTime.UtcNow,
+                DataAtualizacao = DateTime.UtcNow
+            };
 
             _context.Tarefas.Add(tarefa);
             await _context.SaveChangesAsync();
+
+            string? prioridadeNome = null;
+            if (tarefa.PrioridadeID.HasValue)
+            {
+                prioridadeNome = await _context.Prioridades
+                    .Where(p => p.ID == tarefa.PrioridadeID.Value)
+                    .Select(p => p.Nome)
+                    .FirstOrDefaultAsync();
+            }
 
             return CreatedAtAction(nameof(GetTarefas), new { listaId = tarefa.ListaID }, new TarefaDTO
             {
@@ -94,42 +107,39 @@ namespace TaskGX.API.Controllers
                 ListaId = tarefa.ListaID,
                 ListaNome = lista.Nome,
                 PrioridadeId = tarefa.PrioridadeID,
-                PrioridadeNome = null
+                PrioridadeNome = prioridadeNome
             });
         }
 
         // PUT: api/tarefas/{id}
         [HttpPut("{id}")]
-        public async Task<IActionResult> AtualizarTarefa(int id, Tarefas tarefa)
+        public async Task<IActionResult> AtualizarTarefa(int id, [FromBody] AtualizarTarefaRequest request)
         {
-            var usuarioId = GetUsuarioId();
-            if (id != tarefa.ID) return BadRequest();
+            var usuarioId = TokenService.GetUserId(User);
+            if (id != request.ID) return BadRequest();
 
-            // ✅ pega a tarefa SOMENTE se ela estiver numa lista do usuário
             var tarefaDb = await _context.Tarefas
                 .Include(t => t.Lista)
                 .FirstOrDefaultAsync(t => t.ID == id && t.Lista != null && t.Lista.UsuarioID == usuarioId);
 
             if (tarefaDb == null) return NotFound();
 
-            // ✅ atualiza campos permitidos (evita overposting)
-            tarefaDb.Titulo = tarefa.Titulo;
-            tarefaDb.Descricao = tarefa.Descricao;
-            tarefaDb.Tags = tarefa.Tags;
-            tarefaDb.Concluida = tarefa.Concluida;
-            tarefaDb.Arquivada = tarefa.Arquivada;
-            tarefaDb.DataVencimento = tarefa.DataVencimento;
-            tarefaDb.PrioridadeID = tarefa.PrioridadeID;
+            tarefaDb.Titulo = request.Titulo.Trim();
+            tarefaDb.Descricao = string.IsNullOrWhiteSpace(request.Descricao) ? null : request.Descricao.Trim();
+            tarefaDb.Tags = string.IsNullOrWhiteSpace(request.Tags) ? null : request.Tags.Trim();
+            tarefaDb.Concluida = request.Concluida;
+            tarefaDb.Arquivada = request.Arquivada;
+            tarefaDb.DataVencimento = request.DataVencimento;
+            tarefaDb.PrioridadeID = request.PrioridadeID;
+            tarefaDb.Ordem = request.Ordem;
+            tarefaDb.DataAtualizacao = DateTime.UtcNow;
 
-            // Se você permitir mover de lista, faça validação também:
-            if (tarefaDb.ListaID != tarefa.ListaID)
+            if (tarefaDb.ListaID != request.ListaID)
             {
-                var novaLista = await _context.Listas
-                    .AnyAsync(l => l.ID == tarefa.ListaID && l.UsuarioID == usuarioId);
-
+                var novaLista = await _context.Listas.AnyAsync(l => l.ID == request.ListaID && l.UsuarioID == usuarioId);
                 if (!novaLista) return BadRequest("Lista destino inválida.");
 
-                tarefaDb.ListaID = tarefa.ListaID;
+                tarefaDb.ListaID = request.ListaID;
             }
 
             await _context.SaveChangesAsync();
@@ -140,7 +150,7 @@ namespace TaskGX.API.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeletarTarefa(int id)
         {
-            var usuarioId = GetUsuarioId();
+            var usuarioId = TokenService.GetUserId(User);
 
             var tarefa = await _context.Tarefas
                 .Include(t => t.Lista)
@@ -157,7 +167,7 @@ namespace TaskGX.API.Controllers
         [HttpPost("{id}/concluir")]
         public async Task<IActionResult> ConcluirTarefa(int id)
         {
-            var usuarioId = GetUsuarioId();
+            var usuarioId = TokenService.GetUserId(User);
 
             var tarefa = await _context.Tarefas
                 .Include(t => t.Lista)
@@ -166,6 +176,7 @@ namespace TaskGX.API.Controllers
             if (tarefa == null) return NotFound();
 
             tarefa.Concluida = true;
+            tarefa.DataAtualizacao = DateTime.UtcNow;
             await _context.SaveChangesAsync();
             return NoContent();
         }

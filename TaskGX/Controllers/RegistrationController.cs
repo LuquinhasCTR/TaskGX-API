@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using TaskGX.API.DTOs;
 using TaskGX.API.Services;
 
@@ -17,7 +17,16 @@ public class RegistrationController : ControllerBase
     public async Task<IActionResult> Register([FromBody] RegistrationDTO dto)
     {
         var resultado = await _registrationService.CriarContaAsync(dto);
-        if (!resultado.Sucesso) return BadRequest(resultado.Mensagem);
-        return Ok(resultado.Mensagem);
+        if (!resultado.Sucesso)
+        {
+            return BadRequest(new ProblemDetails
+            {
+                Title = "Não foi possível concluir o cadastro.",
+                Detail = resultado.Mensagem,
+                Status = StatusCodes.Status400BadRequest
+            });
+        }
+
+        return Ok(new { message = resultado.Mensagem });
     }
 }

@@ -1,9 +1,9 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.Security.Claims;
 using TaskGX.API.DTOs;
 using TaskGX.API.Models;
+using TaskGX.API.Services;
 using TaskGX.Data;
 
 namespace TaskGX.API.Controllers
@@ -20,22 +20,17 @@ namespace TaskGX.API.Controllers
             _context = context;
         }
 
-        private int GetUsuarioId()
-        {
-            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrWhiteSpace(userIdStr) || !int.TryParse(userIdStr, out var userId))
-                throw new UnauthorizedAccessException("Token inválido ou sem ID de usuário.");
-            return userId;
-        }
-
         // GET: api/listas
         [HttpGet]
         public async Task<ActionResult<IEnumerable<ListaDTO>>> GetListas()
         {
-            var usuarioId = GetUsuarioId();
+            var usuarioId = TokenService.GetUserId(User);
 
             var listas = await _context.Listas
                 .Where(l => l.UsuarioID == usuarioId)
+                .OrderByDescending(l => l.Favorita)
+                .ThenBy(l => l.Ordem)
+                .ThenBy(l => l.Nome)
                 .Select(l => new ListaDTO
                 {
                     ID = l.ID,
@@ -48,26 +43,19 @@ namespace TaskGX.API.Controllers
             return Ok(listas);
         }
 
-        public class CriarListaRequest
-        {
-            public string Nome { get; set; } = string.Empty;
-            public string? Cor { get; set; }
-            public bool Favorita { get; set; } = false;
-        }
-
         // POST: api/listas
         [HttpPost]
         public async Task<ActionResult<ListaDTO>> CriarLista([FromBody] CriarListaRequest request)
         {
-            var usuarioId = GetUsuarioId();
+            var usuarioId = TokenService.GetUserId(User);
 
             var lista = new Listas
             {
                 UsuarioID = usuarioId,
-                Nome = request.Nome,
-                Cor = request.Cor,
+                Nome = request.Nome.Trim(),
+                Cor = string.IsNullOrWhiteSpace(request.Cor) ? null : request.Cor.Trim(),
                 Favorita = request.Favorita,
-                DataCriacao = DateTime.Now
+                DataCriacao = DateTime.UtcNow
             };
 
             _context.Listas.Add(lista);
@@ -84,24 +72,17 @@ namespace TaskGX.API.Controllers
             return CreatedAtAction(nameof(GetListas), new { }, dto);
         }
 
-        public class AtualizarListaRequest
-        {
-            public string Nome { get; set; } = string.Empty;
-            public string? Cor { get; set; }
-            public bool Favorita { get; set; }
-        }
-
         // PUT: api/listas/{id}
         [HttpPut("{id}")]
         public async Task<IActionResult> AtualizarLista(int id, [FromBody] AtualizarListaRequest request)
         {
-            var usuarioId = GetUsuarioId();
+            var usuarioId = TokenService.GetUserId(User);
 
             var lista = await _context.Listas.FirstOrDefaultAsync(l => l.ID == id && l.UsuarioID == usuarioId);
-            if (lista == null) return NotFound(); // não existe ou não é do usuário
+            if (lista == null) return NotFound();
 
-            lista.Nome = request.Nome;
-            lista.Cor = request.Cor;
+            lista.Nome = request.Nome.Trim();
+            lista.Cor = string.IsNullOrWhiteSpace(request.Cor) ? null : request.Cor.Trim();
             lista.Favorita = request.Favorita;
 
             await _context.SaveChangesAsync();
@@ -112,7 +93,7 @@ namespace TaskGX.API.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeletarLista(int id)
         {
-            var usuarioId = GetUsuarioId();
+            var usuarioId = TokenService.GetUserId(User);
 
             var lista = await _context.Listas.FirstOrDefaultAsync(l => l.ID == id && l.UsuarioID == usuarioId);
             if (lista == null) return NotFound();
