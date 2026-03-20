@@ -1,8 +1,8 @@
 # TaskGX-API
 
-TaskGX-API is an **ASP.NET Web API** built to support the TaskGX ecosystem, providing backend features for **authentication**, **task management**, **list organization**, and related data operations.
+TaskGX-API is an **ASP.NET Web API** built to support the TaskGX ecosystem, providing backend functionality for **authentication**, **user management**, **task management**, **list organization**, **priorities**, and **email verification**.
 
-This project was developed to strengthen my backend development skills and to build a structured API that can support both web and desktop applications.
+This project was developed to improve my backend development skills and to build a structured API that can support both web and desktop applications.
 
 ---
 
@@ -12,32 +12,64 @@ This project was developed to strengthen my backend development skills and to bu
 - **ASP.NET Web API**
 - **SQL Server**
 - **JWT Authentication**
-- **REST API principles**
+- **REST API**
+- **Swagger / OpenAPI**
 
 ---
 
 ## Main Features
 
-- User registration and authentication
-- Token-based access with JWT
+- User registration
+- User login with authentication
 - Email verification flow
-- Task management
+- Task creation and management
 - Task list management
 - Priority management
-- Structured separation between controllers, services, repositories, DTOs, and models
+- User profile endpoints
+- Structured backend architecture with separation of responsibilities
 
 ---
 
 ## Project Structure
 
-The project is organized into multiple layers to improve maintainability and code structure:
+The project is organized into multiple layers to improve maintainability and code clarity:
 
-- **Controllers** — handle HTTP requests and endpoints
+- **Controllers** — handle API endpoints and HTTP requests
 - **Services** — contain business logic
 - **Repositories** — manage data access
 - **Models** — represent domain entities
 - **DTOs** — structure request and response data
-- **Data** — database configuration and context
+- **Data** — database configuration and setup
+
+---
+
+## API Preview
+
+### Swagger Overview
+![Swagger Overview](docs/swagger-overview.png)
+
+### Login Endpoint
+![Login Endpoint](docs/swagger-login.png)
+
+### Registration Endpoint
+![Registration Endpoint](docs/swagger-register.png)
+
+### Create Task Endpoint
+![Create Task Endpoint](docs/swagger-create-task.png)
+
+---
+
+## Covered Areas
+
+The API includes endpoints related to:
+
+- **Authentication**
+- **Registration**
+- **Email Verification**
+- **Users**
+- **Tasks**
+- **Task Lists**
+- **Priorities**
 
 ---
 
@@ -49,37 +81,17 @@ This project was built as part of my learning journey in software development, w
 - API development with ASP.NET
 - Authentication and authorization
 - Database-driven applications
-- Clean project organization
-
----
-
-## API Scope
-
-The API includes functionality related to:
-
-- Users
-- Authentication
-- Registration
-- Email verification
-- Tasks
-- Task lists
-- Priorities
+- Code organization and maintainability
 
 ---
 
 ## Future Improvements
 
-- Better documentation for all endpoints
-- Swagger / OpenAPI documentation
-- Input validation improvements
-- More robust error handling
-- Unit and integration tests
-
----
-
-## Status
-
-This project is currently part of my portfolio and learning process, and it represents my practical work with backend development using **C#** and **ASP.NET**.
+- Add full endpoint documentation
+- Improve validation and error handling
+- Add unit and integration tests
+- Improve deployment configuration
+- Expand API documentation with usage examples
 
 ---
 
