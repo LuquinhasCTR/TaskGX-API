@@ -98,4 +98,4 @@ This project was built as part of my learning journey in software development, w
 ## Author
 
 **Lucas Castro Silva**  
-GPSI Student • Gen AI Intern at WIT Software
+Student in Management and Programming of Information Systems
