@@ -1,5 +1,4 @@
 using TaskGX.API.Repositories;
-using TaskGX.Repositories;
 
 namespace TaskGX.API.Services
 {
@@ -20,11 +19,12 @@ namespace TaskGX.API.Services
             codigo = (codigo ?? string.Empty).Trim();
 
             var usuario = await _usuarioRepository.ObterPorEmailAsync(email);
-            if (usuario == null) return (false, "Email não encontrado.");
+            if (usuario == null) return (false, "Email nao encontrado.");
 
-            if (usuario.EmailVerificado) return (true, "Email já verificado.");
-            if (usuario.CodigoVerificacao != codigo) return (false, "Código inválido.");
-            if (usuario.CodigoVerificacaoExpiracao < DateTime.UtcNow) return (false, "Código expirado.");
+            if (usuario.EmailVerificado) return (true, "Email ja verificado.");
+            if (usuario.CodigoVerificacao != codigo) return (false, "Codigo invalido.");
+            if (usuario.CodigoVerificacaoExpiracao is null || usuario.CodigoVerificacaoExpiracao < DateTime.UtcNow)
+                return (false, "Codigo expirado.");
 
             await _usuarioRepository.AtualizarVerificacaoEmailAsync(usuario.ID, true, true, null, null);
             return (true, "Email verificado com sucesso.");
@@ -35,7 +35,9 @@ namespace TaskGX.API.Services
             email = (email ?? string.Empty).Trim().ToLowerInvariant();
 
             var usuario = await _usuarioRepository.ObterPorEmailAsync(email);
-            if (usuario == null) return (false, "Email não encontrado.");
+            if (usuario == null) return (false, "Email nao encontrado.");
+
+            if (usuario.EmailVerificado) return (true, "Email ja verificado.");
 
             var codigo = RegistrationService.GerarCodigoVerificacao();
             var expiracao = DateTime.UtcNow.AddHours(24);
@@ -48,10 +50,10 @@ namespace TaskGX.API.Services
             }
             catch
             {
-                return (false, "Não foi possível reenviar o código no momento.");
+                return (false, "Nao foi possivel reenviar o codigo no momento.");
             }
 
-            return (true, "Novo código enviado com sucesso.");
+            return (true, "Novo codigo enviado com sucesso.");
         }
     }
 }
