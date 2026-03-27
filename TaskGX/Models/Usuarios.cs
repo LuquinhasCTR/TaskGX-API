@@ -21,6 +21,10 @@ namespace TaskGX.API.Models
         [Column("Email")]
         public string Email { get; set; } = string.Empty;
 
+        [MaxLength(150)]
+        [Column("EmailPendente")]
+        public string? EmailPendente { get; set; }
+
         // ✅ no banco é "Senha"
         [Required]
         [Column("Senha")]
