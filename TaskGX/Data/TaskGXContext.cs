@@ -28,6 +28,7 @@ namespace TaskGX.Data
                 entity.Property(e => e.ID).HasColumnName("ID");
                 entity.Property(e => e.Nome).HasColumnName("Nome").HasMaxLength(100);
                 entity.Property(e => e.Email).HasColumnName("Email").HasMaxLength(150);
+                entity.Property(e => e.EmailPendente).HasColumnName("EmailPendente").HasMaxLength(150);
 
                 // no banco é Senha
                 entity.Property(e => e.SenhaHash).HasColumnName("Senha");
