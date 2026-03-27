@@ -1,8 +1,12 @@
 using System.Text;
+using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi;
+using Swashbuckle.AspNetCore.Swagger;
 using TaskGX.API.Repositories;
 using TaskGX.API.Services;
 using TaskGX.Data;
@@ -33,7 +37,7 @@ builder.Services.Configure<ApiBehaviorOptions>(options =>
     {
         var validationProblem = new ValidationProblemDetails(context.ModelState)
         {
-            Title = "A requisição contém dados inválidos.",
+            Title = "A requisicao contem dados invalidos.",
             Status = StatusCodes.Status400BadRequest,
             Type = "https://tools.ietf.org/html/rfc9110#section-15.5.1"
         };
@@ -46,6 +50,7 @@ builder.Services.AddScoped<UsuarioRepository>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<RegistrationService>();
 builder.Services.AddScoped<VerificationService>();
+builder.Services.AddScoped<EmailChangeService>();
 builder.Services.AddScoped<EmailSender>();
 builder.Services.AddScoped<TokenService>();
 
@@ -79,7 +84,24 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 builder.Services.AddAuthorization();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    var bearerScheme = new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Description = "Cole apenas o token JWT.",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT"
+    };
+
+    options.AddSecurityDefinition("Bearer", bearerScheme);
+    options.AddSecurityRequirement(document => new OpenApiSecurityRequirement
+    {
+        [new OpenApiSecuritySchemeReference("Bearer", document)] = []
+    });
+});
 
 var app = builder.Build();
 
@@ -87,18 +109,56 @@ app.UseExceptionHandler(exceptionApp =>
 {
     exceptionApp.Run(async context =>
     {
-        var problem = Results.Problem(
-            statusCode: StatusCodes.Status500InternalServerError,
-            title: "Ocorreu um erro interno ao processar a requisição.");
+        var exceptionFeature = context.Features.Get<IExceptionHandlerPathFeature>();
+        var exception = exceptionFeature?.Error;
+        var logger = context.RequestServices
+            .GetRequiredService<ILoggerFactory>()
+            .CreateLogger("GlobalExceptionHandler");
 
-        await problem.ExecuteAsync(context);
+        if (exception != null)
+        {
+            logger.LogError(
+                exception,
+                "Erro nao tratado em {Method} {Path}",
+                context.Request.Method,
+                context.Request.Path);
+        }
+
+        var problem = new ProblemDetails
+        {
+            Status = StatusCodes.Status500InternalServerError,
+            Title = "Ocorreu um erro interno ao processar a requisicao."
+        };
+
+        if (app.Environment.IsDevelopment() && exception != null)
+        {
+            problem.Detail = exception.Message;
+            problem.Extensions["exceptionType"] = exception.GetType().FullName;
+        }
+
+        context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+        await context.Response.WriteAsJsonAsync(problem);
     });
 });
 
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    app.MapGet("/swagger/v1/swagger-fixed.json", (ISwaggerProvider swaggerProvider) =>
+    {
+        var swaggerDocument = swaggerProvider.GetSwagger("v1");
+        using var stringWriter = new StringWriter();
+        var openApiWriter = new OpenApiJsonWriter(stringWriter);
+
+        swaggerDocument.SerializeAsV3(openApiWriter);
+
+        var swaggerJson = FixSwaggerSecurityRequirements(stringWriter.ToString());
+        return Results.Text(swaggerJson, "application/json");
+    });
+
+    app.UseSwaggerUI(options =>
+    {
+        options.SwaggerEndpoint("/swagger/v1/swagger-fixed.json", "TaskGX v1");
+    });
 }
 
 app.UseHttpsRedirection();
@@ -115,3 +175,11 @@ app.MapGet("/", () => Results.Ok(new
 
 app.MapControllers();
 app.Run();
+
+static string FixSwaggerSecurityRequirements(string swaggerJson)
+{
+    return Regex.Replace(
+        swaggerJson,
+        "\"security\"\\s*:\\s*\\[\\s*\\{\\s*\\}\\s*\\]",
+        "\"security\": [{\"Bearer\": []}]");
+}

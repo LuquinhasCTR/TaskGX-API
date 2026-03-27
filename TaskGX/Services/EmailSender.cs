@@ -95,5 +95,22 @@ namespace TaskGX.API.Services
 
             return SendAsync(toEmail, subject, body, ct);
         }
+
+        public Task SendEmailChangeCodeAsync(string toEmail, string code, DateTime? expiresAt = null, CancellationToken ct = default)
+        {
+            var exp = expiresAt is null ? "" : $"<p>Expira em: <b>{expiresAt:dd/MM/yyyy HH:mm}</b></p>";
+
+            var subject = "Confirmacao de alteracao de email - TaskGX";
+            var body = $@"
+                <div style='font-family: Arial, sans-serif; line-height:1.5'>
+                    <h2>TaskGX</h2>
+                    <p>Use o codigo abaixo para confirmar a alteracao do seu email:</p>
+                    <p style='font-size: 22px; letter-spacing: 2px;'><b>{WebUtility.HtmlEncode(code)}</b></p>
+                    {exp}
+                    <p>Se voce nao solicitou essa alteracao, ignore este email.</p>
+                </div>";
+
+            return SendAsync(toEmail, subject, body, ct);
+        }
     }
 }
