@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace TaskGX.API.Models
 {
     [Table("Tarefas")]
-    public class Tarefas
+    public class Tarefa
     {
         [Key]
         [Column("ID")]
@@ -14,7 +14,7 @@ namespace TaskGX.API.Models
         [Column("Lista_id")]
         public int ListaID { get; set; }
 
-        public Listas? Lista { get; set; }
+        public Lista? Lista { get; set; }
 
         [Required]
         [MaxLength(200)]
@@ -31,7 +31,7 @@ namespace TaskGX.API.Models
         [Column("Prioridade_id")]
         public int? PrioridadeID { get; set; }
 
-        public Prioridades? Prioridade { get; set; }
+        public Prioridade? Prioridade { get; set; }
 
         [Column("Concluida")]
         public bool Concluida { get; set; }

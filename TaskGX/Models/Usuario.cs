@@ -1,11 +1,10 @@
-﻿using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace TaskGX.API.Models
 {
     [Table("Usuarios")]
-    public class Usuarios
+    public class Usuario
     {
         [Key]
         [Column("ID")]
@@ -21,7 +20,10 @@ namespace TaskGX.API.Models
         [Column("Email")]
         public string Email { get; set; } = string.Empty;
 
-        // ✅ no banco é "Senha"
+        [MaxLength(150)]
+        [Column("EmailPendente")]
+        public string? EmailPendente { get; set; }
+
         [Required]
         [Column("Senha")]
         public string SenhaHash { get; set; } = string.Empty;
@@ -33,7 +35,7 @@ namespace TaskGX.API.Models
         public bool Ativo { get; set; } = true;
 
         [Column("EmailVerificado")]
-        public bool EmailVerificado { get; set; } = false;
+        public bool EmailVerificado { get; set; }
 
         [Column("CodigoVerificacao")]
         public string? CodigoVerificacao { get; set; }
@@ -41,11 +43,9 @@ namespace TaskGX.API.Models
         [Column("CodigoVerificacaoExpiracao")]
         public DateTime? CodigoVerificacaoExpiracao { get; set; }
 
-        // ✅ no banco é "Criado_em"
         [Column("Criado_em")]
         public DateTime CriadoEm { get; set; } = DateTime.UtcNow;
 
-        // ✅ no banco é "DataAtualizacao"
         [Column("DataAtualizacao")]
         public DateTime DataAtualizacao { get; set; } = DateTime.UtcNow;
     }

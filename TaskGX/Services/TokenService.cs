@@ -9,14 +9,14 @@ namespace TaskGX.API.Services
 {
     public class TokenService
     {
-        private readonly JwtSettings _settings;
+        private readonly ConfiguracoesJwt _configuracoes;
 
-        public TokenService(IOptions<JwtSettings> settings)
+        public TokenService(IOptions<ConfiguracoesJwt> configuracoes)
         {
-            _settings = settings.Value;
+            _configuracoes = configuracoes.Value;
         }
 
-        public string CreateToken(Usuarios usuario)
+        public string CriarToken(Usuario usuario)
         {
             ArgumentNullException.ThrowIfNull(usuario);
 
@@ -30,49 +30,50 @@ namespace TaskGX.API.Services
                 new(ClaimTypes.Name, usuario.Nome),
             };
 
-            var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_settings.Key));
-            var credentials = new SigningCredentials(signingKey, SecurityAlgorithms.HmacSha256);
+            var chaveAssinatura = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuracoes.Chave));
+            var credenciais = new SigningCredentials(chaveAssinatura, SecurityAlgorithms.HmacSha256);
 
             var token = new JwtSecurityToken(
-                issuer: _settings.Issuer,
-                audience: _settings.Audience,
+                issuer: _configuracoes.Emissor,
+                audience: _configuracoes.Audiencia,
                 claims: claims,
                 notBefore: DateTime.UtcNow,
-                expires: DateTime.UtcNow.AddMinutes(_settings.ExpireMinutes),
-                signingCredentials: credentials
-            );
+                expires: DateTime.UtcNow.AddMinutes(_configuracoes.MinutosExpiracao),
+                signingCredentials: credenciais);
 
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
-        public static int GetUserId(ClaimsPrincipal user)
+        public static int ObterUsuarioId(ClaimsPrincipal usuario)
         {
-            ArgumentNullException.ThrowIfNull(user);
+            ArgumentNullException.ThrowIfNull(usuario);
 
-            var idStr =
-                user.FindFirstValue(ClaimTypes.NameIdentifier) ??
-                user.FindFirstValue(JwtRegisteredClaimNames.Sub);
+            var idTexto =
+                usuario.FindFirstValue(ClaimTypes.NameIdentifier) ??
+                usuario.FindFirstValue(JwtRegisteredClaimNames.Sub);
 
-            if (string.IsNullOrWhiteSpace(idStr) || !int.TryParse(idStr, out var id))
-                throw new InvalidOperationException("Token sem ID de usuário (NameIdentifier/sub).");
+            if (string.IsNullOrWhiteSpace(idTexto) || !int.TryParse(idTexto, out var id))
+                throw new InvalidOperationException("Token sem ID de usuario (NameIdentifier/sub).");
 
             return id;
         }
 
-        public static string? GetEmail(ClaimsPrincipal user)
+        public static string? ObterEmail(ClaimsPrincipal usuario)
         {
-            if (user == null) return null;
+            if (usuario == null)
+                return null;
 
-            return user.FindFirstValue(ClaimTypes.Email)
-                ?? user.FindFirstValue(JwtRegisteredClaimNames.Email);
+            return usuario.FindFirstValue(ClaimTypes.Email)
+                ?? usuario.FindFirstValue(JwtRegisteredClaimNames.Email);
         }
 
-        public static string? GetName(ClaimsPrincipal user)
+        public static string? ObterNome(ClaimsPrincipal usuario)
         {
-            if (user == null) return null;
+            if (usuario == null)
+                return null;
 
-            return user.FindFirstValue(ClaimTypes.Name)
-                ?? user.FindFirst("name")?.Value;
+            return usuario.FindFirstValue(ClaimTypes.Name)
+                ?? usuario.FindFirst("name")?.Value;
         }
     }
 }
