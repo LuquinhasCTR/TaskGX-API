@@ -21,36 +21,36 @@ log/
 logs/
 
 ####################################
-# ASP.NET CORE – CONFIGS (IGNORAR)
+# ASP.NET CORE - CONFIGS (IGNORAR)
 ####################################
-# Ignora appsettings por ambiente em QUALQUER pasta
+# Ignora appsettings por ambiente em qualquer pasta
 **/appsettings.Development.json
 **/appsettings.*
 
 ####################################
-# USER SECRETS / ENV
+# SEGREDOS / AMBIENTE
 ####################################
 secrets.json
 .env
 
 ####################################
-# EMAIL / API KEYS
+# EMAIL / CHAVES DE API
 ####################################
-**/EmailSettings.cs
+**/ConfiguracoesEmail.cs
 
 ####################################
-# OS FILES
+# FICHEIROS DO SISTEMA
 ####################################
 *.DS_Store
 Thumbs.db
 *.swp
 
 ####################################
-# NODE (se usar frontend)
+# NODE (SE USAR FRONTEND)
 ####################################
 node_modules/
 
 ####################################
-# PUBLISH
+# PUBLICACAO
 ####################################
 publish/

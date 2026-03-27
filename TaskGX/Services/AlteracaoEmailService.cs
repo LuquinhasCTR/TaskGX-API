@@ -2,15 +2,15 @@ using TaskGX.API.Repositories;
 
 namespace TaskGX.API.Services
 {
-    public class EmailChangeService
+    public class AlteracaoEmailService
     {
         private readonly UsuarioRepository _usuarioRepository;
-        private readonly EmailSender _emailSender;
+        private readonly EnvioEmailService _envioEmailService;
 
-        public EmailChangeService(UsuarioRepository usuarioRepository, EmailSender emailSender)
+        public AlteracaoEmailService(UsuarioRepository usuarioRepository, EnvioEmailService envioEmailService)
         {
             _usuarioRepository = usuarioRepository;
-            _emailSender = emailSender;
+            _envioEmailService = envioEmailService;
         }
 
         public async Task<(bool Sucesso, string Mensagem, int StatusCode)> SolicitarAlteracaoAsync(int usuarioId, string novoEmail)
@@ -27,14 +27,14 @@ namespace TaskGX.API.Services
             if (await _usuarioRepository.ExisteEmailEmOutroUsuarioAsync(novoEmail, usuario.ID))
                 return (false, "O email informado ja esta em uso.", StatusCodes.Status400BadRequest);
 
-            var codigo = RegistrationService.GerarCodigoVerificacao();
+            var codigo = CadastroService.GerarCodigoVerificacao();
             var expiracao = DateTime.UtcNow.AddHours(24);
 
             await _usuarioRepository.AtualizarSolicitacaoAlteracaoEmailAsync(usuario.ID, novoEmail, codigo, expiracao);
 
             try
             {
-                await _emailSender.SendEmailChangeCodeAsync(novoEmail, codigo, expiresAt: expiracao);
+                await _envioEmailService.EnviarCodigoAlteracaoEmailAsync(novoEmail, codigo, expiresAt: expiracao);
             }
             catch
             {

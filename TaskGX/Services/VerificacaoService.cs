@@ -1,17 +1,16 @@
 using TaskGX.API.Repositories;
-using TaskGX.Repositories;
 
 namespace TaskGX.API.Services
 {
-    public class VerificationService
+    public class VerificacaoService
     {
         private readonly UsuarioRepository _usuarioRepository;
-        private readonly EmailSender _emailSender;
+        private readonly EnvioEmailService _envioEmailService;
 
-        public VerificationService(UsuarioRepository usuarioRepository, EmailSender emailSender)
+        public VerificacaoService(UsuarioRepository usuarioRepository, EnvioEmailService envioEmailService)
         {
             _usuarioRepository = usuarioRepository;
-            _emailSender = emailSender;
+            _envioEmailService = envioEmailService;
         }
 
         public async Task<(bool Sucesso, string Mensagem)> VerificarEmailAsync(string email, string codigo)
@@ -20,11 +19,17 @@ namespace TaskGX.API.Services
             codigo = (codigo ?? string.Empty).Trim();
 
             var usuario = await _usuarioRepository.ObterPorEmailAsync(email);
-            if (usuario == null) return (false, "Email não encontrado.");
+            if (usuario == null)
+                return (false, "Email nao encontrado.");
 
-            if (usuario.EmailVerificado) return (true, "Email já verificado.");
-            if (usuario.CodigoVerificacao != codigo) return (false, "Código inválido.");
-            if (usuario.CodigoVerificacaoExpiracao < DateTime.UtcNow) return (false, "Código expirado.");
+            if (usuario.EmailVerificado)
+                return (true, "Email ja verificado.");
+
+            if (usuario.CodigoVerificacao != codigo)
+                return (false, "Codigo invalido.");
+
+            if (usuario.CodigoVerificacaoExpiracao is null || usuario.CodigoVerificacaoExpiracao < DateTime.UtcNow)
+                return (false, "Codigo expirado.");
 
             await _usuarioRepository.AtualizarVerificacaoEmailAsync(usuario.ID, true, true, null, null);
             return (true, "Email verificado com sucesso.");
@@ -35,23 +40,24 @@ namespace TaskGX.API.Services
             email = (email ?? string.Empty).Trim().ToLowerInvariant();
 
             var usuario = await _usuarioRepository.ObterPorEmailAsync(email);
-            if (usuario == null) return (false, "Email não encontrado.");
+            if (usuario == null)
+                return (false, "Email nao encontrado.");
 
-            var codigo = RegistrationService.GerarCodigoVerificacao();
+            var codigo = CadastroService.GerarCodigoVerificacao();
             var expiracao = DateTime.UtcNow.AddHours(24);
 
             await _usuarioRepository.AtualizarVerificacaoEmailAsync(usuario.ID, false, false, codigo, expiracao);
 
             try
             {
-                await _emailSender.SendVerificationCodeAsync(email, codigo, expiresAt: expiracao);
+                await _envioEmailService.EnviarCodigoVerificacaoAsync(email, codigo, expiresAt: expiracao);
             }
             catch
             {
-                return (false, "Não foi possível reenviar o código no momento.");
+                return (false, "Nao foi possivel reenviar o codigo no momento.");
             }
 
-            return (true, "Novo código enviado com sucesso.");
+            return (true, "Novo codigo enviado com sucesso.");
         }
     }
 }

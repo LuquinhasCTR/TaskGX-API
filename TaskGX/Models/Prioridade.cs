@@ -1,10 +1,10 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace TaskGX.API.Models
 {
     [Table("Prioridades")]
-    public class Prioridades
+    public class Prioridade
     {
         [Key]
         [Column("ID")]

@@ -12,54 +12,54 @@ namespace TaskGX.API.Controllers
     [Authorize]
     public class UsuariosController : ControllerBase
     {
-        private const string ValidationProblemType = "https://tools.ietf.org/html/rfc9110#section-15.5.1";
+        private const string TipoProblemaValidacao = "https://tools.ietf.org/html/rfc9110#section-15.5.1";
 
-        private readonly TaskGXContext _context;
-        private readonly EmailChangeService _emailChangeService;
+        private readonly TaskGXContext _contexto;
+        private readonly AlteracaoEmailService _alteracaoEmailService;
 
-        public UsuariosController(TaskGXContext context, EmailChangeService emailChangeService)
+        public UsuariosController(TaskGXContext contexto, AlteracaoEmailService alteracaoEmailService)
         {
-            _context = context;
-            _emailChangeService = emailChangeService;
+            _contexto = contexto;
+            _alteracaoEmailService = alteracaoEmailService;
         }
 
-        // GET: api/usuarios/me
-        [HttpGet("me")]
-        public async Task<IActionResult> Me()
+        [HttpGet("eu")]
+        public async Task<IActionResult> ObterPerfil()
         {
-            var usuarioId = TokenService.GetUserId(User);
+            var usuarioId = TokenService.ObterUsuarioId(User);
 
-            var user = await _context.Usuarios
-                .Where(u => u.ID == usuarioId)
-                .Select(u => new
+            var usuario = await _contexto.Usuarios
+                .Where(item => item.ID == usuarioId)
+                .Select(item => new
                 {
-                    u.ID,
-                    u.Nome,
-                    u.Email,
-                    u.Avatar,
-                    u.Ativo,
-                    u.EmailVerificado,
-                    u.CriadoEm,
-                    u.DataAtualizacao
+                    item.ID,
+                    item.Nome,
+                    item.Email,
+                    item.Avatar,
+                    item.Ativo,
+                    item.EmailVerificado,
+                    item.CriadoEm,
+                    item.DataAtualizacao
                 })
                 .FirstOrDefaultAsync();
 
-            if (user == null) return Unauthorized();
-            return Ok(user);
+            if (usuario == null)
+                return Unauthorized();
+
+            return Ok(usuario);
         }
 
-        // PUT: api/usuarios/me
-        [HttpPut("me")]
-        public async Task<IActionResult> AtualizarMe([FromBody] AtualizarUsuarioRequest req)
+        [HttpPut("eu")]
+        public async Task<IActionResult> AtualizarPerfil([FromBody] AtualizarUsuarioRequest requisicao)
         {
-            var usuarioId = TokenService.GetUserId(User);
+            var usuarioId = TokenService.ObterUsuarioId(User);
 
-            var user = await _context.Usuarios.FirstOrDefaultAsync(u => u.ID == usuarioId);
-            if (user == null) return Unauthorized();
+            var usuario = await _contexto.Usuarios.FirstOrDefaultAsync(item => item.ID == usuarioId);
+            if (usuario == null)
+                return Unauthorized();
 
-            var nome = (req.Nome ?? string.Empty).Trim();
-            var avatar = string.IsNullOrWhiteSpace(req.Avatar) ? null : req.Avatar.Trim();
-
+            var nome = (requisicao.Nome ?? string.Empty).Trim();
+            var avatar = string.IsNullOrWhiteSpace(requisicao.Avatar) ? null : requisicao.Avatar.Trim();
             var erros = new Dictionary<string, string[]>();
 
             if (string.IsNullOrWhiteSpace(nome))
@@ -78,127 +78,125 @@ namespace TaskGX.API.Controllers
                 erros["avatar"] = ["O avatar deve ter no maximo 255 caracteres."];
 
             if (erros.Count > 0)
-                return BadRequest(CreateValidationProblem(erros));
+                return BadRequest(CriarProblemaValidacao(erros));
 
-            user.Nome = nome;
-            user.Avatar = avatar;
-            user.DataAtualizacao = DateTime.UtcNow;
+            usuario.Nome = nome;
+            usuario.Avatar = avatar;
+            usuario.DataAtualizacao = DateTime.UtcNow;
 
-            await _context.SaveChangesAsync();
+            await _contexto.SaveChangesAsync();
             return NoContent();
         }
 
-        // PATCH: api/usuarios/me/password
-        [HttpPatch("me/password")]
-        public async Task<IActionResult> AlterarSenha([FromBody] AlterarSenhaRequest req)
+        [HttpPatch("eu/senha")]
+        public async Task<IActionResult> AlterarSenha([FromBody] AlterarSenhaRequest requisicao)
         {
-            var usuarioId = TokenService.GetUserId(User);
+            var usuarioId = TokenService.ObterUsuarioId(User);
 
-            var user = await _context.Usuarios.FirstOrDefaultAsync(u => u.ID == usuarioId);
-            if (user == null) return Unauthorized();
+            var usuario = await _contexto.Usuarios.FirstOrDefaultAsync(item => item.ID == usuarioId);
+            if (usuario == null)
+                return Unauthorized();
 
-            if (!PasswordService.Verify(req.SenhaAtual, user.SenhaHash))
+            if (!SenhaService.Verificar(requisicao.SenhaAtual, usuario.SenhaHash))
             {
-                return BadRequest(CreateProblem(
+                return BadRequest(CriarProblema(
                     "Nao foi possivel alterar a senha.",
                     "A senha atual informada esta incorreta.",
                     StatusCodes.Status400BadRequest));
             }
 
-            if (PasswordService.Verify(req.NovaSenha, user.SenhaHash))
+            if (SenhaService.Verificar(requisicao.NovaSenha, usuario.SenhaHash))
             {
-                return BadRequest(CreateProblem(
+                return BadRequest(CriarProblema(
                     "Nao foi possivel alterar a senha.",
                     "A nova senha deve ser diferente da senha atual.",
                     StatusCodes.Status400BadRequest));
             }
 
-            if (!string.Equals(req.NovaSenha, req.ConfirmarNovaSenha, StringComparison.Ordinal))
+            if (!string.Equals(requisicao.NovaSenha, requisicao.ConfirmarNovaSenha, StringComparison.Ordinal))
             {
-                return BadRequest(CreateProblem(
+                return BadRequest(CriarProblema(
                     "Nao foi possivel alterar a senha.",
                     "A confirmacao da nova senha nao confere.",
                     StatusCodes.Status400BadRequest));
             }
 
-            if (!PasswordService.IsValid(req.NovaSenha))
+            if (!SenhaService.EhValida(requisicao.NovaSenha))
             {
-                return BadRequest(CreateProblem(
+                return BadRequest(CriarProblema(
                     "Nao foi possivel alterar a senha.",
                     "A nova senha nao atende aos requisitos de seguranca.",
                     StatusCodes.Status400BadRequest));
             }
 
-            user.SenhaHash = PasswordService.Hash(req.NovaSenha);
-            user.DataAtualizacao = DateTime.UtcNow;
+            usuario.SenhaHash = SenhaService.GerarHash(requisicao.NovaSenha);
+            usuario.DataAtualizacao = DateTime.UtcNow;
 
-            await _context.SaveChangesAsync();
+            await _contexto.SaveChangesAsync();
             return NoContent();
         }
 
-        // POST: api/usuarios/me/email/request-change
-        [HttpPost("me/email/request-change")]
-        public async Task<IActionResult> SolicitarAlteracaoEmail([FromBody] SolicitarAlteracaoEmailRequest req)
+        [HttpPost("eu/email/solicitar-alteracao")]
+        public async Task<IActionResult> SolicitarAlteracaoEmail([FromBody] SolicitarAlteracaoEmailRequest requisicao)
         {
-            var usuarioId = TokenService.GetUserId(User);
-            var resultado = await _emailChangeService.SolicitarAlteracaoAsync(usuarioId, req.NovoEmail);
+            var usuarioId = TokenService.ObterUsuarioId(User);
+            var resultado = await _alteracaoEmailService.SolicitarAlteracaoAsync(usuarioId, requisicao.NovoEmail);
 
             if (!resultado.Sucesso)
             {
-                var problem = CreateProblem(
+                var problema = CriarProblema(
                     "Nao foi possivel solicitar a alteracao de email.",
                     resultado.Mensagem,
                     resultado.StatusCode);
 
                 if (resultado.StatusCode == StatusCodes.Status401Unauthorized)
-                    return Unauthorized(problem);
+                    return Unauthorized(problema);
 
-                return StatusCode(resultado.StatusCode, problem);
+                return StatusCode(resultado.StatusCode, problema);
             }
 
-            return Ok(new { message = resultado.Mensagem });
+            return Ok(new { mensagem = resultado.Mensagem });
         }
 
-        // POST: api/usuarios/me/email/confirm-change
-        [HttpPost("me/email/confirm-change")]
-        public async Task<IActionResult> ConfirmarAlteracaoEmail([FromBody] ConfirmarAlteracaoEmailRequest req)
+        [HttpPost("eu/email/confirmar-alteracao")]
+        public async Task<IActionResult> ConfirmarAlteracaoEmail([FromBody] ConfirmarAlteracaoEmailRequest requisicao)
         {
-            var usuarioId = TokenService.GetUserId(User);
-            var resultado = await _emailChangeService.ConfirmarAlteracaoAsync(usuarioId, req.Codigo);
+            var usuarioId = TokenService.ObterUsuarioId(User);
+            var resultado = await _alteracaoEmailService.ConfirmarAlteracaoAsync(usuarioId, requisicao.Codigo);
 
             if (!resultado.Sucesso)
             {
-                var problem = CreateProblem(
+                var problema = CriarProblema(
                     "Nao foi possivel confirmar a alteracao de email.",
                     resultado.Mensagem,
                     resultado.StatusCode);
 
                 if (resultado.StatusCode == StatusCodes.Status401Unauthorized)
-                    return Unauthorized(problem);
+                    return Unauthorized(problema);
 
-                return StatusCode(resultado.StatusCode, problem);
+                return StatusCode(resultado.StatusCode, problema);
             }
 
-            return Ok(new { message = resultado.Mensagem });
+            return Ok(new { mensagem = resultado.Mensagem });
         }
 
-        private static ProblemDetails CreateProblem(string title, string detail, int statusCode)
+        private static ProblemDetails CriarProblema(string titulo, string detalhe, int codigoStatus)
         {
             return new ProblemDetails
             {
-                Title = title,
-                Detail = detail,
-                Status = statusCode
+                Title = titulo,
+                Detail = detalhe,
+                Status = codigoStatus
             };
         }
 
-        private static ValidationProblemDetails CreateValidationProblem(IDictionary<string, string[]> erros)
+        private static ValidationProblemDetails CriarProblemaValidacao(IDictionary<string, string[]> erros)
         {
             return new ValidationProblemDetails(erros)
             {
                 Title = "A requisicao contem dados invalidos.",
                 Status = StatusCodes.Status400BadRequest,
-                Type = ValidationProblemType
+                Type = TipoProblemaValidacao
             };
         }
     }

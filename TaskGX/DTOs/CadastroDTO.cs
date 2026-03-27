@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace TaskGX.API.DTOs
 {
-    public class RegistrationDTO
+    public class CadastroDTO
     {
         [Required]
         [StringLength(100, MinimumLength = 2)]

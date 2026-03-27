@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using TaskGX.API.Models;
 using TaskGX.Data;
 
@@ -6,82 +6,85 @@ namespace TaskGX.API.Repositories
 {
     public class UsuarioRepository
     {
-        private readonly TaskGXContext _db;
+        private readonly TaskGXContext _contexto;
 
-        public UsuarioRepository(TaskGXContext db)
+        public UsuarioRepository(TaskGXContext contexto)
         {
-            _db = db;
+            _contexto = contexto;
         }
 
-        public Task<Usuarios?> ObterPorEmailAsync(string email)
+        public Task<Usuario?> ObterPorEmailAsync(string email)
         {
-            return _db.Usuarios
+            return _contexto.Usuarios
                 .AsNoTracking()
-                .Where(u => u.Email == email)
-                .Select(u => new Usuarios
+                .Where(usuario => usuario.Email == email)
+                .Select(usuario => new Usuario
                 {
-                    ID = u.ID,
-                    Nome = u.Nome,
-                    Email = u.Email,
-                    SenhaHash = u.SenhaHash,
-                    Avatar = u.Avatar,
-                    Ativo = u.Ativo,
-                    EmailVerificado = u.EmailVerificado,
-                    CodigoVerificacao = u.CodigoVerificacao,
-                    CodigoVerificacaoExpiracao = u.CodigoVerificacaoExpiracao,
-                    CriadoEm = u.CriadoEm,
-                    DataAtualizacao = u.DataAtualizacao
+                    ID = usuario.ID,
+                    Nome = usuario.Nome,
+                    Email = usuario.Email,
+                    EmailPendente = usuario.EmailPendente,
+                    SenhaHash = usuario.SenhaHash,
+                    Avatar = usuario.Avatar,
+                    Ativo = usuario.Ativo,
+                    EmailVerificado = usuario.EmailVerificado,
+                    CodigoVerificacao = usuario.CodigoVerificacao,
+                    CodigoVerificacaoExpiracao = usuario.CodigoVerificacaoExpiracao,
+                    CriadoEm = usuario.CriadoEm,
+                    DataAtualizacao = usuario.DataAtualizacao
                 })
                 .FirstOrDefaultAsync();
         }
 
-        public Task<Usuarios?> ObterPorIdAsync(int usuarioId)
+        public Task<Usuario?> ObterPorIdAsync(int usuarioId)
         {
-            return _db.Usuarios.AsNoTracking().FirstOrDefaultAsync(u => u.ID == usuarioId);
+            return _contexto.Usuarios.AsNoTracking().FirstOrDefaultAsync(usuario => usuario.ID == usuarioId);
         }
 
-        public Task<Usuarios?> ObterParaEdicaoPorIdAsync(int usuarioId)
+        public Task<Usuario?> ObterParaEdicaoPorIdAsync(int usuarioId)
         {
-            return _db.Usuarios.FirstOrDefaultAsync(u => u.ID == usuarioId);
+            return _contexto.Usuarios.FirstOrDefaultAsync(usuario => usuario.ID == usuarioId);
         }
 
         public Task<bool> ExisteEmailAsync(string email)
         {
-            return _db.Usuarios.AnyAsync(u => u.Email == email);
+            return _contexto.Usuarios.AnyAsync(usuario => usuario.Email == email);
         }
 
         public Task<bool> ExisteEmailEmOutroUsuarioAsync(string email, int usuarioId)
         {
-            return _db.Usuarios.AnyAsync(u => u.Email == email && u.ID != usuarioId);
+            return _contexto.Usuarios.AnyAsync(usuario => usuario.Email == email && usuario.ID != usuarioId);
         }
 
-        public async Task InserirAsync(Usuarios usuario)
+        public async Task InserirAsync(Usuario usuario)
         {
-            _db.Usuarios.Add(usuario);
-            await _db.SaveChangesAsync();
+            _contexto.Usuarios.Add(usuario);
+            await _contexto.SaveChangesAsync();
         }
 
         public async Task AtualizarDadosAsync(int usuarioId, string nome, string email)
         {
-            var usuario = await _db.Usuarios.FirstOrDefaultAsync(u => u.ID == usuarioId);
-            if (usuario == null) return;
+            var usuario = await _contexto.Usuarios.FirstOrDefaultAsync(item => item.ID == usuarioId);
+            if (usuario == null)
+                return;
 
             usuario.Nome = nome;
             usuario.Email = email;
             usuario.DataAtualizacao = DateTime.UtcNow;
 
-            await _db.SaveChangesAsync();
+            await _contexto.SaveChangesAsync();
         }
 
         public async Task AtualizarSenhaAsync(int usuarioId, string senhaHash)
         {
-            var usuario = await _db.Usuarios.FirstOrDefaultAsync(u => u.ID == usuarioId);
-            if (usuario == null) return;
+            var usuario = await _contexto.Usuarios.FirstOrDefaultAsync(item => item.ID == usuarioId);
+            if (usuario == null)
+                return;
 
-            usuario.SenhaHash = senhaHash; // mapeado para coluna "Senha"
+            usuario.SenhaHash = senhaHash;
             usuario.DataAtualizacao = DateTime.UtcNow;
 
-            await _db.SaveChangesAsync();
+            await _contexto.SaveChangesAsync();
         }
 
         public async Task AtualizarVerificacaoEmailAsync(
@@ -91,8 +94,9 @@ namespace TaskGX.API.Repositories
             string? codigoVerificacao,
             DateTime? expiracao)
         {
-            var usuario = await _db.Usuarios.FirstOrDefaultAsync(u => u.ID == usuarioId);
-            if (usuario == null) return;
+            var usuario = await _contexto.Usuarios.FirstOrDefaultAsync(item => item.ID == usuarioId);
+            if (usuario == null)
+                return;
 
             usuario.EmailVerificado = emailVerificado;
             usuario.Ativo = ativo;
@@ -100,7 +104,7 @@ namespace TaskGX.API.Repositories
             usuario.CodigoVerificacaoExpiracao = expiracao;
             usuario.DataAtualizacao = DateTime.UtcNow;
 
-            await _db.SaveChangesAsync();
+            await _contexto.SaveChangesAsync();
         }
 
         public async Task AtualizarSolicitacaoAlteracaoEmailAsync(
@@ -109,21 +113,23 @@ namespace TaskGX.API.Repositories
             string codigoVerificacao,
             DateTime expiracao)
         {
-            var usuario = await _db.Usuarios.FirstOrDefaultAsync(u => u.ID == usuarioId);
-            if (usuario == null) return;
+            var usuario = await _contexto.Usuarios.FirstOrDefaultAsync(item => item.ID == usuarioId);
+            if (usuario == null)
+                return;
 
             usuario.EmailPendente = novoEmail;
             usuario.CodigoVerificacao = codigoVerificacao;
             usuario.CodigoVerificacaoExpiracao = expiracao;
             usuario.DataAtualizacao = DateTime.UtcNow;
 
-            await _db.SaveChangesAsync();
+            await _contexto.SaveChangesAsync();
         }
 
         public async Task ConfirmarAlteracaoEmailAsync(int usuarioId, string novoEmail)
         {
-            var usuario = await _db.Usuarios.FirstOrDefaultAsync(u => u.ID == usuarioId);
-            if (usuario == null) return;
+            var usuario = await _contexto.Usuarios.FirstOrDefaultAsync(item => item.ID == usuarioId);
+            if (usuario == null)
+                return;
 
             usuario.Email = novoEmail;
             usuario.EmailPendente = null;
@@ -132,7 +138,7 @@ namespace TaskGX.API.Repositories
             usuario.CodigoVerificacaoExpiracao = null;
             usuario.DataAtualizacao = DateTime.UtcNow;
 
-            await _db.SaveChangesAsync();
+            await _contexto.SaveChangesAsync();
         }
     }
 }

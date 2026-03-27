@@ -13,88 +13,88 @@ namespace TaskGX.API.Controllers
     [Authorize]
     public class TarefasController : ControllerBase
     {
-        private readonly TaskGXContext _context;
+        private readonly TaskGXContext _contexto;
 
-        public TarefasController(TaskGXContext context)
+        public TarefasController(TaskGXContext contexto)
         {
-            _context = context;
+            _contexto = contexto;
         }
 
-        // GET: api/tarefas?listaId=1
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<TarefaDTO>>> GetTarefas([FromQuery] int listaId)
+        public async Task<ActionResult<IEnumerable<TarefaDTO>>> ObterTarefas([FromQuery] int listaId)
         {
-            var usuarioId = TokenService.GetUserId(User);
+            var usuarioId = TokenService.ObterUsuarioId(User);
 
-            var listaDoUsuario = await _context.Listas.AnyAsync(l => l.ID == listaId && l.UsuarioID == usuarioId);
-            if (!listaDoUsuario) return NotFound();
+            var listaDoUsuario = await _contexto.Listas.AnyAsync(lista => lista.ID == listaId && lista.UsuarioID == usuarioId);
+            if (!listaDoUsuario)
+                return NotFound();
 
-            var tarefas = await _context.Tarefas
-                .Include(t => t.Lista)
-                .Include(t => t.Prioridade)
-                .Where(t => t.ListaID == listaId)
-                .OrderBy(t => t.Concluida)
-                .ThenBy(t => t.Ordem)
-                .ThenBy(t => t.DataCriacao)
-                .Select(t => new TarefaDTO
+            var tarefas = await _contexto.Tarefas
+                .Include(tarefa => tarefa.Lista)
+                .Include(tarefa => tarefa.Prioridade)
+                .Where(tarefa => tarefa.ListaID == listaId)
+                .OrderBy(tarefa => tarefa.Concluida)
+                .ThenBy(tarefa => tarefa.Ordem)
+                .ThenBy(tarefa => tarefa.DataCriacao)
+                .Select(tarefa => new TarefaDTO
                 {
-                    ID = t.ID,
-                    Titulo = t.Titulo,
-                    Descricao = t.Descricao,
-                    Tags = t.Tags,
-                    Concluida = t.Concluida,
-                    Arquivada = t.Arquivada,
-                    DataVencimento = t.DataVencimento,
-                    DataCriacao = t.DataCriacao,
-                    ListaId = t.ListaID,
-                    ListaNome = t.Lista != null ? t.Lista.Nome : null,
-                    PrioridadeId = t.PrioridadeID,
-                    PrioridadeNome = t.Prioridade != null ? t.Prioridade.Nome : null
+                    ID = tarefa.ID,
+                    Titulo = tarefa.Titulo,
+                    Descricao = tarefa.Descricao,
+                    Tags = tarefa.Tags,
+                    Concluida = tarefa.Concluida,
+                    Arquivada = tarefa.Arquivada,
+                    DataVencimento = tarefa.DataVencimento,
+                    DataCriacao = tarefa.DataCriacao,
+                    ListaId = tarefa.ListaID,
+                    ListaNome = tarefa.Lista != null ? tarefa.Lista.Nome : null,
+                    PrioridadeId = tarefa.PrioridadeID,
+                    PrioridadeNome = tarefa.Prioridade != null ? tarefa.Prioridade.Nome : null
                 })
                 .ToListAsync();
 
             return Ok(tarefas);
         }
 
-        // POST: api/tarefas
         [HttpPost]
-        public async Task<ActionResult<TarefaDTO>> CriarTarefa([FromBody] CriarTarefaRequest request)
+        public async Task<ActionResult<TarefaDTO>> CriarTarefa([FromBody] CriarTarefaRequest requisicao)
         {
-            var usuarioId = TokenService.GetUserId(User);
+            var usuarioId = TokenService.ObterUsuarioId(User);
 
-            var lista = await _context.Listas
-                .FirstOrDefaultAsync(l => l.ID == request.ListaID && l.UsuarioID == usuarioId);
+            var lista = await _contexto.Listas
+                .FirstOrDefaultAsync(item => item.ID == requisicao.ListaID && item.UsuarioID == usuarioId);
 
-            if (lista == null) return NotFound("Lista não encontrada.");
+            if (lista == null)
+                return NotFound("Lista nao encontrada.");
 
-            var tarefa = new Tarefas
+            var tarefa = new Tarefa
             {
-                ListaID = request.ListaID,
-                Titulo = request.Titulo.Trim(),
-                Descricao = string.IsNullOrWhiteSpace(request.Descricao) ? null : request.Descricao.Trim(),
-                Tags = string.IsNullOrWhiteSpace(request.Tags) ? null : request.Tags.Trim(),
-                PrioridadeID = request.PrioridadeID,
-                Concluida = request.Concluida,
-                Arquivada = request.Arquivada,
-                DataVencimento = request.DataVencimento,
-                Ordem = request.Ordem,
+                ListaID = requisicao.ListaID,
+                Titulo = requisicao.Titulo.Trim(),
+                Descricao = string.IsNullOrWhiteSpace(requisicao.Descricao) ? null : requisicao.Descricao.Trim(),
+                Tags = string.IsNullOrWhiteSpace(requisicao.Tags) ? null : requisicao.Tags.Trim(),
+                PrioridadeID = requisicao.PrioridadeID,
+                Concluida = requisicao.Concluida,
+                Arquivada = requisicao.Arquivada,
+                DataVencimento = requisicao.DataVencimento,
+                Ordem = requisicao.Ordem,
                 DataCriacao = DateTime.UtcNow,
                 DataAtualizacao = DateTime.UtcNow
             };
 
-            _context.Tarefas.Add(tarefa);
-            await _context.SaveChangesAsync();
+            _contexto.Tarefas.Add(tarefa);
+            await _contexto.SaveChangesAsync();
 
             string? prioridadeNome = null;
             if (tarefa.PrioridadeID.HasValue)
             {
-                prioridadeNome = await _context.Prioridades
-                    .Where(p => p.ID == tarefa.PrioridadeID.Value)
-                    .Select(p => p.Nome)
+                prioridadeNome = await _contexto.Prioridades
+                    .Where(prioridade => prioridade.ID == tarefa.PrioridadeID.Value)
+                    .Select(prioridade => prioridade.Nome)
                     .FirstOrDefaultAsync();
             }
 
-            return CreatedAtAction(nameof(GetTarefas), new { listaId = tarefa.ListaID }, new TarefaDTO
+            return CreatedAtAction(nameof(ObterTarefas), new { listaId = tarefa.ListaID }, new TarefaDTO
             {
                 ID = tarefa.ID,
                 Titulo = tarefa.Titulo,
@@ -111,73 +111,75 @@ namespace TaskGX.API.Controllers
             });
         }
 
-        // PUT: api/tarefas/{id}
         [HttpPut("{id}")]
-        public async Task<IActionResult> AtualizarTarefa(int id, [FromBody] AtualizarTarefaRequest request)
+        public async Task<IActionResult> AtualizarTarefa(int id, [FromBody] AtualizarTarefaRequest requisicao)
         {
-            var usuarioId = TokenService.GetUserId(User);
-            if (id != request.ID) return BadRequest();
+            var usuarioId = TokenService.ObterUsuarioId(User);
+            if (id != requisicao.ID)
+                return BadRequest();
 
-            var tarefaDb = await _context.Tarefas
-                .Include(t => t.Lista)
-                .FirstOrDefaultAsync(t => t.ID == id && t.Lista != null && t.Lista.UsuarioID == usuarioId);
+            var tarefa = await _contexto.Tarefas
+                .Include(item => item.Lista)
+                .FirstOrDefaultAsync(item => item.ID == id && item.Lista != null && item.Lista.UsuarioID == usuarioId);
 
-            if (tarefaDb == null) return NotFound();
+            if (tarefa == null)
+                return NotFound();
 
-            tarefaDb.Titulo = request.Titulo.Trim();
-            tarefaDb.Descricao = string.IsNullOrWhiteSpace(request.Descricao) ? null : request.Descricao.Trim();
-            tarefaDb.Tags = string.IsNullOrWhiteSpace(request.Tags) ? null : request.Tags.Trim();
-            tarefaDb.Concluida = request.Concluida;
-            tarefaDb.Arquivada = request.Arquivada;
-            tarefaDb.DataVencimento = request.DataVencimento;
-            tarefaDb.PrioridadeID = request.PrioridadeID;
-            tarefaDb.Ordem = request.Ordem;
-            tarefaDb.DataAtualizacao = DateTime.UtcNow;
+            tarefa.Titulo = requisicao.Titulo.Trim();
+            tarefa.Descricao = string.IsNullOrWhiteSpace(requisicao.Descricao) ? null : requisicao.Descricao.Trim();
+            tarefa.Tags = string.IsNullOrWhiteSpace(requisicao.Tags) ? null : requisicao.Tags.Trim();
+            tarefa.Concluida = requisicao.Concluida;
+            tarefa.Arquivada = requisicao.Arquivada;
+            tarefa.DataVencimento = requisicao.DataVencimento;
+            tarefa.PrioridadeID = requisicao.PrioridadeID;
+            tarefa.Ordem = requisicao.Ordem;
+            tarefa.DataAtualizacao = DateTime.UtcNow;
 
-            if (tarefaDb.ListaID != request.ListaID)
+            if (tarefa.ListaID != requisicao.ListaID)
             {
-                var novaLista = await _context.Listas.AnyAsync(l => l.ID == request.ListaID && l.UsuarioID == usuarioId);
-                if (!novaLista) return BadRequest("Lista destino inválida.");
+                var novaLista = await _contexto.Listas.AnyAsync(lista => lista.ID == requisicao.ListaID && lista.UsuarioID == usuarioId);
+                if (!novaLista)
+                    return BadRequest("Lista destino invalida.");
 
-                tarefaDb.ListaID = request.ListaID;
+                tarefa.ListaID = requisicao.ListaID;
             }
 
-            await _context.SaveChangesAsync();
+            await _contexto.SaveChangesAsync();
             return NoContent();
         }
 
-        // DELETE: api/tarefas/{id}
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeletarTarefa(int id)
         {
-            var usuarioId = TokenService.GetUserId(User);
+            var usuarioId = TokenService.ObterUsuarioId(User);
 
-            var tarefa = await _context.Tarefas
-                .Include(t => t.Lista)
-                .FirstOrDefaultAsync(t => t.ID == id && t.Lista != null && t.Lista.UsuarioID == usuarioId);
+            var tarefa = await _contexto.Tarefas
+                .Include(item => item.Lista)
+                .FirstOrDefaultAsync(item => item.ID == id && item.Lista != null && item.Lista.UsuarioID == usuarioId);
 
-            if (tarefa == null) return NotFound();
+            if (tarefa == null)
+                return NotFound();
 
-            _context.Tarefas.Remove(tarefa);
-            await _context.SaveChangesAsync();
+            _contexto.Tarefas.Remove(tarefa);
+            await _contexto.SaveChangesAsync();
             return NoContent();
         }
 
-        // POST: api/tarefas/{id}/concluir
         [HttpPost("{id}/concluir")]
         public async Task<IActionResult> ConcluirTarefa(int id)
         {
-            var usuarioId = TokenService.GetUserId(User);
+            var usuarioId = TokenService.ObterUsuarioId(User);
 
-            var tarefa = await _context.Tarefas
-                .Include(t => t.Lista)
-                .FirstOrDefaultAsync(t => t.ID == id && t.Lista != null && t.Lista.UsuarioID == usuarioId);
+            var tarefa = await _contexto.Tarefas
+                .Include(item => item.Lista)
+                .FirstOrDefaultAsync(item => item.ID == id && item.Lista != null && item.Lista.UsuarioID == usuarioId);
 
-            if (tarefa == null) return NotFound();
+            if (tarefa == null)
+                return NotFound();
 
             tarefa.Concluida = true;
             tarefa.DataAtualizacao = DateTime.UtcNow;
-            await _context.SaveChangesAsync();
+            await _contexto.SaveChangesAsync();
             return NoContent();
         }
     }

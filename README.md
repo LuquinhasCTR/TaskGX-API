@@ -1,101 +1,97 @@
 # TaskGX-API
 
-TaskGX-API is an **ASP.NET Web API** built to support the TaskGX ecosystem, providing backend functionality for **authentication**, **user management**, **task management**, **list organization**, **priorities**, and **email verification**.
+TaskGX-API e uma **ASP.NET Core Web API** criada para suportar o ecossistema TaskGX, disponibilizando funcionalidades de **autenticacao**, **gestao de utilizadores**, **tarefas**, **listas**, **prioridades** e **verificacao de email**.
 
-This project was developed to improve my backend development skills and to build a structured API that can support both web and desktop applications.
+O projeto foi desenvolvido para consolidar competencias de backend e manter uma API organizada, pronta para suportar aplicacoes web e desktop.
 
 ---
 
-## Tech Stack
+## Tecnologias
 
 - **C#**
-- **ASP.NET Web API**
-- **SQL Server**
-- **JWT Authentication**
+- **ASP.NET Core Web API**
+- **MySQL**
+- **JWT**
 - **REST API**
 - **Swagger / OpenAPI**
 
 ---
 
-## Main Features
+## Funcionalidades Principais
 
-- User registration
-- User login with authentication
-- Email verification flow
-- Task creation and management
-- Task list management
-- Priority management
-- User profile endpoints
-- Structured backend architecture with separation of responsibilities
-
----
-
-## Project Structure
-
-The project is organized into multiple layers to improve maintainability and code clarity:
-
-- **Controllers** — handle API endpoints and HTTP requests
-- **Services** — contain business logic
-- **Repositories** — manage data access
-- **Models** — represent domain entities
-- **DTOs** — structure request and response data
-- **Data** — database configuration and setup
+- Cadastro de utilizadores
+- Login com autenticacao JWT
+- Fluxo de verificacao de email
+- Criacao e gestao de tarefas
+- Organizacao de listas
+- Gestao de prioridades
+- Endpoints de perfil do utilizador
+- Arquitetura em camadas com responsabilidades separadas
 
 ---
 
-## API Preview
+## Estrutura do Projeto
 
-### Swagger Overview
+- **Controllers**: expõem os endpoints HTTP
+- **Services**: concentram a logica de negocio
+- **Repositories**: tratam o acesso aos dados
+- **Models**: representam as entidades do dominio
+- **DTOs**: definem contratos de request e response
+- **Data**: contem a configuracao do contexto de base de dados
+
+---
+
+## Previsualizacao da API
+
+### Visao Geral do Swagger
 ![Swagger Overview](docs/swagger-overview.png)
 
-### Login Endpoint
+### Endpoint de Login
 ![Login Endpoint](docs/swagger-login.png)
 
-### Registration Endpoint
+### Endpoint de Cadastro
 ![Registration Endpoint](docs/swagger-register.png)
 
-### Create Task Endpoint
+### Endpoint de Criacao de Tarefa
 ![Create Task Endpoint](docs/swagger-create-task.png)
 
 ---
 
-## Covered Areas
+## Areas Cobertas
 
-The API includes endpoints related to:
-
-- **Authentication**
-- **Registration**
-- **Email Verification**
-- **Users**
-- **Tasks**
-- **Task Lists**
-- **Priorities**
+- **Autenticacao**
+- **Cadastro**
+- **Verificacao de Email**
+- **Usuarios**
+- **Tarefas**
+- **Listas**
+- **Prioridades**
 
 ---
 
-## Purpose
+## Objetivo
 
-This project was built as part of my learning journey in software development, with the goal of improving my knowledge in:
+Este projeto faz parte do meu percurso de aprendizagem em desenvolvimento de software, com foco em:
 
-- Backend architecture
-- API development with ASP.NET
-- Authentication and authorization
-- Database-driven applications
-- Code organization and maintainability
-
----
-
-## Future Improvements
-
-- Add full endpoint documentation
-- Improve validation and error handling
-- Add unit and integration tests
-- Improve deployment configuration
-- Expand API documentation with usage examples
+- Arquitetura backend
+- Desenvolvimento de APIs com ASP.NET
+- Autenticacao e autorizacao
+- Aplicacoes orientadas a base de dados
+- Organizacao e manutencao de codigo
 
 ---
 
-## Author
+## Melhorias Futuras
+
+- Adicionar documentacao completa dos endpoints
+- Melhorar validacoes e tratamento de erros
+- Adicionar testes unitarios e de integracao
+- Evoluir a configuracao de deploy
+- Expandir a documentacao da API com exemplos de uso
+
+---
+
+## Autor
 
 **Lucas Castro Silva**  
-Student in Management and Programming of Information Systems
+Estudante de Gestao e Programacao de Sistemas de Informacao

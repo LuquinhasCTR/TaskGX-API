@@ -1,7 +1,6 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using TaskGX.API.Models;
 using TaskGX.Data;
 
 namespace TaskGX.API.Controllers
@@ -11,36 +10,34 @@ namespace TaskGX.API.Controllers
     [Authorize]
     public class PrioridadesController : ControllerBase
     {
-        private readonly TaskGXContext _context;
+        private readonly TaskGXContext _contexto;
 
-        public PrioridadesController(TaskGXContext context)
+        public PrioridadesController(TaskGXContext contexto)
         {
-            _context = context;
+            _contexto = contexto;
         }
 
-        // GET: api/prioridades
         [HttpGet]
-        public async Task<IActionResult> Get()
+        public async Task<IActionResult> Obter()
         {
-            var prioridades = await _context.Prioridades
-                .OrderBy(p => p.ID)
-                .Select(p => new { p.ID, p.Nome })
+            var prioridades = await _contexto.Prioridades
+                .OrderBy(prioridade => prioridade.ID)
+                .Select(prioridade => new { prioridade.ID, prioridade.Nome })
                 .ToListAsync();
 
             return Ok(prioridades);
         }
 
-        // Se ainda não tem roles/admin: trava alterações por segurança
         [HttpPost]
-        [Authorize] // mantém, mas vamos bloquear mesmo assim
-        public IActionResult Post() => Forbid();
+        [Authorize]
+        public IActionResult Criar() => Forbid();
 
         [HttpPut("{id}")]
         [Authorize]
-        public IActionResult Put(int id) => Forbid();
+        public IActionResult Atualizar(int id) => Forbid();
 
         [HttpDelete("{id}")]
         [Authorize]
-        public IActionResult Delete(int id) => Forbid();
+        public IActionResult Excluir(int id) => Forbid();
     }
 }

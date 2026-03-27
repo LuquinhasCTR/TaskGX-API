@@ -1,25 +1,26 @@
-﻿using TaskGX.API.Models;
+using TaskGX.API.Models;
 using TaskGX.API.Repositories;
 
 namespace TaskGX.API.Services
 {
-    public class AuthService
+    public class AutenticacaoService
     {
         private readonly UsuarioRepository _usuarioRepository;
 
-        public AuthService(UsuarioRepository usuarioRepository)
+        public AutenticacaoService(UsuarioRepository usuarioRepository)
         {
             _usuarioRepository = usuarioRepository;
         }
 
-        public async Task<Usuarios?> LoginAsync(string email, string senhaDigitada)
+        public async Task<Usuario?> AutenticarAsync(string email, string senhaInformada)
         {
-            email = (email ?? "").Trim().ToLowerInvariant();
+            email = (email ?? string.Empty).Trim().ToLowerInvariant();
 
             var usuario = await _usuarioRepository.ObterPorEmailAsync(email);
-            if (usuario == null) return null;
+            if (usuario == null)
+                return null;
 
-            if (!PasswordService.Verify(senhaDigitada, usuario.SenhaHash))
+            if (!SenhaService.Verificar(senhaInformada, usuario.SenhaHash))
                 return null;
 
             if (!usuario.Ativo || !usuario.EmailVerificado)
