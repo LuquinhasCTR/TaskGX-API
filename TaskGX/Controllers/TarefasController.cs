@@ -65,7 +65,13 @@ namespace TaskGX.API.Controllers
             var lista = await _context.Listas
                 .FirstOrDefaultAsync(l => l.ID == request.ListaID && l.UsuarioID == usuarioId);
 
-            if (lista == null) return NotFound("Lista não encontrada.");
+            if (lista == null) return NotFound("Lista nao encontrada.");
+
+            if (request.PrioridadeID.HasValue)
+            {
+                var prioridadeExiste = await _context.Prioridades.AnyAsync(p => p.ID == request.PrioridadeID.Value);
+                if (!prioridadeExiste) return BadRequest("Prioridade invalida.");
+            }
 
             var tarefa = new Tarefas
             {
@@ -124,6 +130,12 @@ namespace TaskGX.API.Controllers
 
             if (tarefaDb == null) return NotFound();
 
+            if (request.PrioridadeID.HasValue)
+            {
+                var prioridadeExiste = await _context.Prioridades.AnyAsync(p => p.ID == request.PrioridadeID.Value);
+                if (!prioridadeExiste) return BadRequest("Prioridade invalida.");
+            }
+
             tarefaDb.Titulo = request.Titulo.Trim();
             tarefaDb.Descricao = string.IsNullOrWhiteSpace(request.Descricao) ? null : request.Descricao.Trim();
             tarefaDb.Tags = string.IsNullOrWhiteSpace(request.Tags) ? null : request.Tags.Trim();
@@ -137,7 +149,7 @@ namespace TaskGX.API.Controllers
             if (tarefaDb.ListaID != request.ListaID)
             {
                 var novaLista = await _context.Listas.AnyAsync(l => l.ID == request.ListaID && l.UsuarioID == usuarioId);
-                if (!novaLista) return BadRequest("Lista destino inválida.");
+                if (!novaLista) return BadRequest("Lista destino invalida.");
 
                 tarefaDb.ListaID = request.ListaID;
             }
